@@ -3,9 +3,12 @@ package ph.apper.account;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,10 +18,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
+
 @SpringBootApplication
 public class App {
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
+        SpringApplication springApplication = new SpringApplication(DemoApplication.class);
+        springApplication.addListeners(new ApplicationPidFileWriter());
+        springApplication.run(args);
     }
 
 //    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
@@ -29,6 +37,9 @@ public class App {
     @RestController
     @RequestMapping("account")
     public static class AccountController {
+
+        @Autowired
+        private Environment env;
 
         private final RestTemplate restTemplate;
 
@@ -45,7 +56,8 @@ public class App {
             activity.setAction("REGISTRATION");
             activity.setIdentifier("email="+request.getEmail());
 
-            ResponseEntity<Object> response = restTemplate.postForEntity("http://localhost:8080/activity", activity, Object.class);
+            ResponseEntity<Object> response
+                    = restTemplate.postForEntity(Objects.requireNonNull(env.getProperty("service.url")), activity, Object.class);
 
             if(response.getStatusCode().is2xxSuccessful()) {
                 System.out.println("Success!");
